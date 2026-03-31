@@ -1,0 +1,55 @@
+name: Check Blog Folder Changes
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  check-blog-only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if changes are only in /blog folder
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            // Check if any file is outside the /blog folder
+            const filesOutsideBlog = files.filter(file => !file.filename.startsWith('blog/'));
+
+            if (filesOutsideBlog.length > 0) {
+              const fileList = filesOutsideBlog.map(f => `- ${f.filename}`).join('\n');
+
+              // Comment on the PR
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `❌ **PR Rejected**: You have modified files outside the \`/blog\` folder.\n\n**Modified files outside /blog:**\n${fileList}\n\nPlease ensure you only modify files inside the \`/blog\` folder.`,
+              });
+
+              // Close the PR
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                state: 'closed',
+              });
+
+              core.setFailed('PR closed: Changes detected outside /blog folder');
+            } else {
+              core.info('✅ All changes are within /blog folder');
+            }
