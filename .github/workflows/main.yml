@@ -32,7 +32,7 @@ jobs:
             });
 
             // Check if any file is outside the /blog folder
-            console.log(file)
+            core.info(files);
             const filesOutsideBlog = files.filter(file => !file.filename.startsWith('blog/'));
 
             if (filesOutsideBlog.length > 0) {
