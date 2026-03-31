@@ -32,8 +32,9 @@ jobs:
             });
 
             // Check if any file is outside the /blog folder
-            core.info(files);
-            const filesOutsideBlog = files.filter(file => !file.filename.startsWith('blog/'));
+            const fileList = files.map(f => f.filename);
+            core.info('Changed files: ' + JSON.stringify(fileList));
+            const filesOutsideBlog = files.filter(file => !file.filename.startsWith('pages/blog/'));
 
             if (filesOutsideBlog.length > 0) {
               const fileList = filesOutsideBlog.map(f => `- ${f.filename}`).join('\n');
