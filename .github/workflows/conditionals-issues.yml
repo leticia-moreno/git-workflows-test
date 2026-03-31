@@ -17,7 +17,7 @@ jobs:
         run: |
           curl -s -X POST https://api.github.com/repos/$OWNER/$REPO/issues/$ISSUE_NUMBER/comments \
             -d '{"body":"Hello ${{ github.event.issue.user.login }}, thanks for reporting the bug!"}'
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
       - if: startsWith(github.event.issue.title, 'feature request')
         name: handle-feature-requests
         run: echo "This step runs only for feature requests"
