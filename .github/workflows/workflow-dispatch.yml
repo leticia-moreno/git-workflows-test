@@ -1,0 +1,8 @@
+name: workflow-dispatch
+on: workflow_dispatch
+jobs:
+  job-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: greeting
+        run: echo "Hello World! This is a workflow_dispatch"
