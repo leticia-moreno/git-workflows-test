@@ -1,0 +1,11 @@
+name: Greeting
+on:
+  push:
+    branches:
+      - main
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: This-step-has-a-name
+        run: 'echo "hello world!"'
