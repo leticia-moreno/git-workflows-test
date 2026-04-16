@@ -1,0 +1,93 @@
+name: PR Validation & Auto-pilot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+          run: corepack enable && corepack prepare
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        id: build
+        run: pnpm run build
+
+      - name: Request changes on build failure
+        if: failure() && steps.build.outcome == 'failure'
+        run: |
+          gh pr review "$PR_URL" --request-changes --body "❌ **Build Failed.** Please check the 'Actions' tab for details."
+
+      - name: Check for key file changes
+        if: success()
+        id: keyfiles
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            critical:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*'
+              - '*.config.*'
+              - 'pages/Home.js'
+              - '.github/workflows/**'
+
+      - name: Determine if human review is needed
+        if: success()
+        id: review_needed
+        run: |
+          if [[ "${{ github.event.action }}" == "reopened" ]]; then
+            echo "reason=reopened" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.keyfiles.outputs.critical }}" == "true" ]]; then
+            echo "reason=key_files_changed" >> $GITHUB_OUTPUT
+          else
+            echo "reason=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Auto-approve and Enable Auto-merge
+        if: success() && steps.review_needed.outputs.reason == 'none'
+        run: |
+          gh pr review "$PR_URL" --approve --body "✅ All checks passed. Auto-approving and queueing for merge."
+          gh pr merge "$PR_URL" --auto --squash --delete-branch
+
+      - name: Request human review
+        if: success() && steps.review_needed.outputs.reason != 'none'
+        run: |
+          REASON="${{ steps.review_needed.outputs.reason }}"
+          MSG="⛔ **Manual review required.**"
+
+          if [ "$REASON" == "reopened" ]; then
+            MSG="$MSG This PR was reopened, requiring human validation."
+          else
+            MSG="$MSG Critical configuration or dependency files were modified. Requiring human validation."
+          fi
+
+          gh pr review "$PR_URL" --request-changes --body "$MSG"
+          gh pr edit "$PR_URL" --add-label "human-review-required"
