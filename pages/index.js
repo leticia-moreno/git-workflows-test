@@ -12,13 +12,13 @@ export default function Home() {
         />
       </Head>
 
-      <main>
+      <main className="main">
         <h1 className={styles.title}>
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
 
         <p className={styles.description}>
-          Get started by editing <code>pages/index.js</code>
+          Get started by editing <code className="code">pages/index.js</code>
         </p>
 
         <div className={styles.grid}>
@@ -54,7 +54,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer>
+      <footer className="footer">
         <a
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
           target="_blank"
@@ -69,7 +69,7 @@ export default function Home() {
       </footer>
 
       <style jsx>{`
-        main {
+        main.main {
           padding: 5rem 0;
           flex: 1;
           display: flex;
@@ -77,7 +77,7 @@ export default function Home() {
           justify-content: center;
           align-items: center;
         }
-        footer {
+        footer.footer {
           width: 100%;
           height: 100px;
           border-top: 1px solid #eaeaea;
@@ -85,17 +85,17 @@ export default function Home() {
           justify-content: center;
           align-items: center;
         }
-        footer img {
+        footer.footer img {
           margin-left: 0.5rem;
         }
-        footer a {
+        footer.footer a {
           display: flex;
           justify-content: center;
           align-items: center;
           text-decoration: none;
           color: inherit;
         }
-        code {
+        code.code {
           background: #fafafa;
           border-radius: 5px;
           padding: 0.75rem;
