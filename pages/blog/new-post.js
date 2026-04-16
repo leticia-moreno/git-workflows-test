@@ -14,11 +14,11 @@ export default function NewPost() {
 
       <main>
         <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          Welcome to <a href="https://nextjs.org">Next.js!!!!!!!</a>
         </h1>
 
         <p className={styles.description}>
-          Get started by editing <code>pages/index.js</code>
+          Get started by editing <code className="code">pages/index.js</code>
         </p>
 
         <div className={styles.grid}>
@@ -54,7 +54,7 @@ export default function NewPost() {
         </div>
       </main>
 
-      <footer>
+      <footer className="footer">
         <a
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
           target="_blank"
