@@ -71,6 +71,26 @@ jobs:
               event: 'APPROVE',
               body: '✅ All checks passed and no critical files changed. Auto-approved by Workflow.'
             });
+            const query = `mutation($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
+              enablePullRequestAutoMerge(input: {
+                pullRequestId: $pullRequestId,
+                mergeMethod: $mergeMethod
+              }) {
+                pullRequest {
+                  autoMergeRequest {
+                    enabledAt
+                    enabledBy { login }
+                  }
+                }
+              }
+            }`;
+
+            const variables = {
+              pullRequestId: prId,
+              mergeMethod: 'MERGE'
+            };
+
+            await github.graphql(query, variables);
 
       - name: Request human review (key files changed or reopened)
         if: steps.review_needed.outputs.reason != 'none'
