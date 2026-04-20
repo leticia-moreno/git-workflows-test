@@ -14,6 +14,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PR_URL: ${{ github.event.pull_request.html_url }}
+      TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
 
     steps:
       - name: Checkout code
@@ -71,22 +72,59 @@ jobs:
             echo "reason=none" >> $GITHUB_OUTPUT
           fi
 
-      - name: Auto-approve and Enable Auto-merge
-        if: success() && steps.review_needed.outputs.reason == 'none'
+      - name: "Auto-approve → developer"
+        if: >
+          success()
+          && steps.review_needed.outputs.reason == 'none'
+          && env.TARGET_BRANCH == 'developer'
         run: |
-          gh pr review "$PR_URL" --approve --body "✅ All checks passed. Auto-approving and queueing for merge."
-          gh pr merge "$PR_URL" --auto --squash --delete-branch
+          gh pr review "$PR_URL" --approve --body "✅ Build passed — auto-approving into **developer** for preview."
+          gh pr merge "$PR_URL" --auto --squash
 
-      - name: Request human review
-        if: success() && steps.review_needed.outputs.reason != 'none'
+      - name: "Request human review → developer (critical files)"
+        if: >
+          success()
+          && steps.review_needed.outputs.reason != 'none'
+          && env.TARGET_BRANCH == 'developer'
         run: |
           REASON="${{ steps.review_needed.outputs.reason }}"
-          MSG="⛔ **Manual review required.**"
+          MSG="⛔ **Manual review required before merging into developer.**"
 
           if [ "$REASON" == "reopened" ]; then
             MSG="$MSG This PR was reopened, requiring human validation."
           else
-            MSG="$MSG Critical configuration or dependency files were modified. Requiring human validation."
+            MSG="$MSG Critical configuration or dependency files were modified."
+          fi
+
+          gh pr review "$PR_URL" --request-changes --body "$MSG"
+          gh pr edit "$PR_URL" --add-label "human-review-required"
+
+      - name: "Auto-approve → main (from developer, safe files only)"
+        if: >
+          success()
+          && steps.review_needed.outputs.reason == 'none'
+          && env.TARGET_BRANCH == 'main'
+          && github.event.pull_request.head.ref == 'developer'
+        run: |
+          gh pr review "$PR_URL" --approve --body "✅ All checks passed. Promoting **developer → main**. Auto-approving and queueing for merge."
+          gh pr merge "$PR_URL" --auto --squash
+
+      - name: "Request human review → main"
+        if: >
+          success()
+          && env.TARGET_BRANCH == 'main'
+          && (steps.review_needed.outputs.reason != 'none' || github.event.pull_request.head.ref != 'developer')
+        run: |
+          REASON="${{ steps.review_needed.outputs.reason }}"
+          SOURCE="${{ github.event.pull_request.head.ref }}"
+          MSG="⛔ **Manual review required before merging into main (production).**"
+
+          if [ "$SOURCE" != "developer" ]; then
+            MSG="$MSG This PR does not come from the developer branch. Requiring validation."
+          elif [ "$REASON" == "reopened" ]; then
+            MSG="$MSG This PR was reopened, requiring human validation."
+          else
+            MSG="$MSG Critical configuration or dependency files were modified."
           fi
 
           gh pr review "$PR_URL" --request-changes --body "$MSG"
