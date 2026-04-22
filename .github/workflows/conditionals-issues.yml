@@ -1,4 +1,4 @@
-name: conditionals-issues
+name: conditionals-issues!
 on:
   issues:
     types: [opened]
